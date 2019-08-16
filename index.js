@@ -286,7 +286,7 @@ function postCurrentFbToTweet() {
     console.log('postCurrentFbToTweet', current_fb_post);
   }
   if (!current_fb_post.arr_tweet) {
-    utils.breakFBPostOnTweets(current_fb_post);
+    utils.breakFBPostOnTweets(current_fb_post, USER_TWITTER_LOGIN);
   }
   if (current_fb_post.arr_tweet.length === 0) {
     postFBtoTwitter();
