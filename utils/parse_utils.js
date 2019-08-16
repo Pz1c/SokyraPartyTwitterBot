@@ -147,7 +147,7 @@ function parsePostBody(body, fb_post_id) {
       return post;
   }
 
-  function breakFBPostOnTweets(post) {
+  function breakFBPostOnTweets(post, user_twitter_login) {
     var arr_word = post.text.split(' ');
     console.log('breakFBPostOnTweets', arr_word.length, post);
     post.arr_tweet = [];
@@ -168,7 +168,7 @@ function parsePostBody(body, fb_post_id) {
           txt_tweet += ' ' + current_fb_post.url;
         }
         post.arr_tweet.push(txt_tweet);
-        txt_tweet = '@'+USER_TWITTER_LOGIN;
+        txt_tweet = '@'+user_twitter_login;
       }
       txt_tweet += ' ' + word;
     }
