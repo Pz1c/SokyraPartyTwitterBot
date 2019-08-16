@@ -1,3 +1,6 @@
+const cheerio = require('cheerio');
+var twitter_check = require('twitter-text');
+
 function cleanUrl(url, clean_site) {
     if (url.indexOf('?') !== -1) {
         url = url.substr(0, url.indexOf('?'));
@@ -180,6 +183,7 @@ function parsePostBody(body, fb_post_id) {
     }
     console.log('breakFBPostOnTweets', post.arr_tweet);
   }
+
 
 exports.cleanUrl = cleanUrl;
 exports.parsePostBody = parsePostBody;

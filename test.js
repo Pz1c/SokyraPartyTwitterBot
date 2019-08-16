@@ -15,8 +15,7 @@ youtube.playlistItems.list({
     "maxResults": 50,
     "playlistId": "UUmjfQjsQAWGtSYzD7UQbLmg",
     "access_token": bot_access.youtube.access_token
-  })
-      .then(function(response) {
+  }).then(function(response) {
               // Handle the results here (response.result has the parsed body).
               console.log("Response", response);
             },

@@ -2,9 +2,7 @@ var Twitter = require('twitter');
 var fs = require('fs');
 var request = require('request');
 var md5 = require('md5');
-const cheerio = require('cheerio')
 const instagram_save = require('instagram-save');
-var twitter_check = require('twitter-text')
 var utils = require('./utils/parse_utils.js');
 
 const PATH_TO_LOG_FOLDER = '../DemOrdaTwitterBotParams/log/';
