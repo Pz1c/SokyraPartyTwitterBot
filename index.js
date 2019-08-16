@@ -5,31 +5,27 @@ var md5 = require('md5');
 const cheerio = require('cheerio')
 const instagram_save = require('instagram-save');
 var twitter_check = require('twitter-text')
-
-var client = new Twitter({
-  consumer_key: 'Bj1BSuh5KzuOO4KlItxZ862We',
-  consumer_secret: '41Og2NHY93hdJWrgvJAe1qA1ip7WAwJFCj2M1EFVjzwQSzlvHf',
-  access_token_key: '992730495736799232-9uMkWEaeRrHKhXhW3EjMppKOu0zsiXn',
-  access_token_secret: 'kf2E6Ljbl4dN1UtX7cLEZZAxkQgKIpAjPM3kIVWHvbmme'
-});
+var utils = require('./utils/parse_utils.js');
 
 const PATH_TO_LOG_FOLDER = '../DemOrdaTwitterBotParams/log/';
+const PATH_TO_ACCESS_FILE = '../DemOrdaTwitterBotParams/access.json';
 const PATH_TO_PARAM_FILE = '../DemOrdaTwitterBotParams/params.json';
 const PATH_TO_IMG_FOLDER = '../DemOrdaTwitterBotParams/img/';
-
 const USER_FB_PAGE_CODE = 'sokyra.party';
 const USER_TWITTER_LOGIN = 'sokyra_party';
-var fb_page_scan_idx = 0;
 const FB_PAGE_TO_SCAN = ['https://m.facebook.com/pg/'+USER_FB_PAGE_CODE+'/posts/?t=', 'https://www.facebook.com/pg/'+USER_FB_PAGE_CODE+'/posts/?t='];
 
-
+var bot_access = JSON.parse(fs.readFileSync(PATH_TO_ACCESS_FILE, "utf8"));
 var bot_params = JSON.parse(fs.readFileSync(PATH_TO_PARAM_FILE, "utf8"));
-var tweet_id = '';
-var idx = 0;
+var fb_page_scan_idx = 0;
+//var tweet_id = '';
+//var idx = 0;
 var arr_fb_lnk = [];
 var arr_objects_to_post = [];
-var max_scan_count = -1;
+//var max_scan_count = -1;
 var write_log = true;
+
+var client = new Twitter(bot_access.twitter);
 
 var fb_scan_interval = setInterval(scanFB, 10 * 60 * 1000);
 scanFB();
@@ -49,8 +45,8 @@ function time() {
 }
 
 var skip_scan_idx = 0;
-function scanFB() {
-  console.log('scanFB');
+
+function scanFbInit() {
   if (arr_fb_lnk.length > 0) {
     if (++skip_scan_idx >= 3) {
       console.log('prev scan still working 30 min, clean array');
@@ -64,17 +60,65 @@ function scanFB() {
   if (++fb_page_scan_idx >= FB_PAGE_TO_SCAN.length) {
     fb_page_scan_idx = 0;
   }
+}
+
+function scanFbSearchFbid(body) {
+  var idx1 = 0, idx2;
+  while((idx1 = body.indexOf('fbid=', idx1)) != -1) {
+    idx1 += 5;
+    idx2 = body.indexOf('&', idx1);
+    var lnk_id = body.substr(idx1, idx2 - idx1) * 1;
+    idx1 = idx2;
+    if (isNaN(lnk_id)) {
+      continue;
+    }
+    //arr_lnk.push(lnk);
+    console.log('scanFB', 'search1', lnk_id);
+    if ((bot_params.fb_ids.indexOf(lnk_id) === -1) && (arr_fb_lnk.indexOf(lnk_id) === -1)) {
+      arr_fb_lnk.push(lnk_id);
+      console.log('scanFB', 'search1', 'added');
+    } else {
+      console.log('scanFB', 'search1', 'skipped');
+    }
+  }
+}
+
+function scanFbSearchFtent(body) {
+  var idx1 = 0, idx2;
+  while((idx1 = body.indexOf('ft_ent_identifier" value="', idx1)) != -1) {
+    idx1 += 26;
+    idx2 = body.indexOf('"', idx1);
+    var lnk_id = body.substr(idx1, idx2 - idx1) * 1;
+    idx1 = idx2;
+    if (isNaN(lnk_id)) {
+      continue;
+    }
+    //arr_lnk.push(lnk);
+    console.log('scanFB', 'search2', lnk_id);
+    if ((bot_params.fb_ids.indexOf(lnk_id) === -1) && (arr_fb_lnk.indexOf(lnk_id) === -1)) {
+      arr_fb_lnk.push(lnk_id);
+      console.log('scanFB', 'search2', 'added');
+    } else {
+      console.log('scanFB', 'search2', 'skipped');
+    }
+  }
+}
+
+function scanFB() {
+  console.log('scanFB');
+  scanFbInit();
+
   request({url: FB_PAGE_TO_SCAN[fb_page_scan_idx]  + time(),
   headers: {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0'
-  }
+  },
+  proxy: 'http://localhost:4128'
   }, function (error, response, body) {
     if (error) {
       console.log('error:', error); // Print the error if one occurred
       return;
     }
     console.log('statusCode:', response && response.statusCode, body.length); // Print the response status code if a response was received
-    var idx1 = 0, idx2;
     if (write_log) {
       fs.writeFile(PATH_TO_LOG_FOLDER + 'list.html', /*JSON.stringify(response) + "\n\n\n\n\n" + */body, function(err) {
         if(err) {
@@ -83,52 +127,18 @@ function scanFB() {
       });
     }
     
-    //return;
-    while((idx1 = body.indexOf('fbid=', idx1)) != -1) {
-      idx1 += 5;
-      idx2 = body.indexOf('&', idx1);
-      var lnk_id = body.substr(idx1, idx2 - idx1) * 1;
-      idx1 = idx2;
-      if (isNaN(lnk_id)) {
-        continue;
-      }
-      //arr_lnk.push(lnk);
-      console.log('scanFB', 'search1', lnk_id);
-      if ((bot_params.fb_ids.indexOf(lnk_id) === -1) && (arr_fb_lnk.indexOf(lnk_id) === -1)) {
-        arr_fb_lnk.push(lnk_id);
-        console.log('scanFB', 'search1', 'added');
-      } else {
-        console.log('scanFB', 'search1', 'skipped');
-      }
-    }
-    while((idx1 = body.indexOf('ft_ent_identifier" value="', idx1)) != -1) {
-      idx1 += 26;
-      idx2 = body.indexOf('"', idx1);
-      var lnk_id = body.substr(idx1, idx2 - idx1) * 1;
-      idx1 = idx2;
-      if (isNaN(lnk_id)) {
-        continue;
-      }
-      //arr_lnk.push(lnk);
-      console.log('scanFB', 'search2', lnk_id);
-      if ((bot_params.fb_ids.indexOf(lnk_id) === -1) && (arr_fb_lnk.indexOf(lnk_id) === -1)) {
-        arr_fb_lnk.push(lnk_id);
-        console.log('scanFB', 'search2', 'added');
-      } else {
-        console.log('scanFB', 'search2', 'skipped');
-      }
-    }
+    scanFbSearchFbid(body);
+    scanFbSearchFtent(body);
+    
     arr_fb_lnk.sort(sortNumber);
     console.log(arr_fb_lnk);
-    //return;
-    //if (arr_fb_lnk.length > 0) {
-      scanFBPost();
-    //}
-    //var $ = cheerio.load(body);
-    //var arr_lnk = $()
+    
+    scanFBPost();
+
+    storeParams();
   });
   
-  storeParams();
+  
 }
 
 function scanFBPost() {
@@ -141,11 +151,7 @@ function scanFBPost() {
     return;
   }
   var fb_post_id = arr_fb_lnk.shift();
-  /*if ((fb_post_id === 125896374935752) || (fb_post_id === 431131864018765) || (fb_post_id === 431493690649249)) {
-    ++max_scan_count;
-    scanFBPost();
-    return;
-  }*/
+  
   console.log('scanFBPost', fb_post_id);
   request({url: 'https://www.facebook.com/'+USER_FB_PAGE_CODE+'/posts/' + fb_post_id + '?_fb_noscript=1',
   headers: {
@@ -176,118 +182,6 @@ function scanFBPost() {
   });
 }
 
-function cleanUrl(url, clean_site) {
-  if (url.indexOf('?') !== -1) {
-    url = url.substr(0, url.indexOf('?'));
-  }
-  if (url.indexOf('://') !== -1) {
-    url = url.substr(url.indexOf('://') + 3);
-  }
-  
-  if (clean_site && (url.indexOf('/') !== -1)) {
-    url = url.substr(url.indexOf('/') + 1);
-  }
-  
-  return url;
-}
-
-function parsePostType(post, $) {
-  console.log('parsePostType');
-  if (post.url.indexOf('/events/') != -1) {
-    post.type = 'event';
-    return;
-  }
-  if (post.url.indexOf('/videos/') != -1) {
-    post.type = 'video';
-    return;
-  }
-  if (post.url.indexOf('/photos/') != -1) {
-    post.type = 'photo';
-    return;
-  }
-  
-  post.type = 'post';
-  
-  var arr = $('div.clearfix span.fwn span.fcg a');
-  var last_url = $(arr[arr.length - 1]).attr('href');
-  //console.log('parsePostType', last_url, arr);
-  if (last_url.toLowerCase().indexOf('/'+USER_FB_PAGE_CODE+'/') === -1) {
-    post.type = 'share';
-  }
-}
-
-function parsePostImgs(post, $, body) {
-  console.log('parsePostImgs');
-  var arr = $('div.fbStoryAttachmentImage img.scaledImageFitWidth');
-  //console.log('parsePostImgs', arr.length, arr);
-  var Ln = arr.length;
-  if (Ln > 0) {
-    for(var i = 0; i < Ln; ++i) {
-      post.img.push(arr[i].attribs.src);//.replace(/&amp;/g, '&'));
-    }
-  } else {  
-    var idx1 = body.indexOf('<meta property="og:image" content="');
-    if (idx1 === -1) {
-      return;
-    }
-    idx1 += 35;
-    var idx2 = body.indexOf('"', idx1);
-    var src = body.substr(idx1, idx2 - idx1).replace(/&amp;/g, '&');
-    if (post.img.indexOf(src) === -1) {
-      post.img.push(src);
-    }
-  }
-}
-
-function parseEvent(post, $) {
-  console.log('parseEvent');
-  var htm_title = $('div._fwx a').html();
-  if (!htm_title) {
-    htm_title = $('div._6m6 a').html();
-  }
-  post.title = $("<textarea/>").html(htm_title).text();
-  console.log('title', post.title);
-  var htm_date = $('div._fwr span').attr('title');
-  if (!htm_date) {
-    htm_date = $('div._6lz div').html();
-  }
-  post.dt_str = $("<textarea/>").html(htm_date).text();
-  console.log('date', post.dt_str);
-  post.time_str = $('div._fwy span:last-child').html();
-  console.log('time', post.time_str);
-  if (!post.time_str) {
-    post.time_str = '';
-  }
-  var arr = $('div._fwy div.fsm span');
-  //console.log('arr', arr);
-  if (!arr || !(arr.length > 0)) {
-    htm_addr = $('div._6m7 div').text();
-  } else {
-    htm_addr = $(arr[arr.length - 1]).html();
-  }
-  post.addr = $("<textarea/>").html(htm_addr).text();
-  console.log('addr', post.addr);
-  post.text = 'додає подію ' + post.title + '\n' + 'Коли: ' + post.dt_str + ' ' + post.time_str + '\nДе: ' + post.addr;
-}
-
-function parseTitle(post, $) {
-  console.log('parseTitle');
-  post.text = ($("<textarea/>").html($('div.clearfix._42ef span.fwn span.fcg').text()).text() + ' ' + post.text).trim();
-}
-
-function parsePost(post, $) {
-  console.log('parsePoste');
-  post.text = $("<textarea/>").html($('div.userContent').html()).text();
-}
-
-function parseShare(post, $) {
-  console.log('parseShare');
-  var html = $('div.clearfix.mts div.mtm').html();
-  if (html) {
-    post.text = $("<textarea/>").html(html).text();
-  }
-}
-
 function checkDuplicated(post) {
   var str = post.text;
   for(var i =0, Ln = post.img.length; i < Ln; ++i) {
@@ -313,48 +207,12 @@ function checkDuplicated(post) {
 
 function parsePostBody(body, fb_post_id) {
   console.log('parsePostBody', fb_post_id);
-  //try {
-    if (body.length <= 0) {
-      console.log('parsePostBody', fb_post_id, 'body is empty');
-      return;
-    }
-    var post = {post_id:fb_post_id,img:[],twiter_img:[]};
-    const $ = cheerio.load(body);
-    var href_obj = $('span.fsm a._5pcq')[0];
-    if (!href_obj || !href_obj.attribs) {
-      console.log('parsePostBody', fb_post_id, 'href not found!');
-      return;
-    }
-    var url = href_obj.attribs.href;
-    post.url = 'fb.com/'+cleanUrl(url, true);
-    post.time = $('span.fsm a._5pcq abbr').attr('data-utime') * 1;
-    parsePostType(post, $);
-    parsePostImgs(post, $, body);
-    switch(post.type) {
-      case 'event':
-        parseEvent(post, $);
-        break;
-      case 'share':
-        parseShare(post, $);
-        //break; this is fine
-      default:
-        parsePost(post, $);
-        if (post.type !== 'post') {
-          parseTitle(post, $);
-        }
-        break;
-    }
-    addFbPostToQueue(post);
-    /*console.log('parsePostBody', post);
-    if (checkDuplicated(post)) {
-      arr_objects_to_post.push(post);
-    }*/
-  /*} catch (err) {
-    console.log(post);
-    console.log(err.message);
-    console.trace();
+  if (body.length <= 0) {
+    console.log('parsePostBody', fb_post_id, 'body is empty');
     return;
-  }*/
+  }
+  var post = utils.parsePostBody(body, fb_post_id);
+  addFbPostToQueue(post);
 }
 
 function addFbPostToQueue(post) {
@@ -423,46 +281,12 @@ function postFBImage() {
     });
 }
 
-function breakFBPostOnTweets(post) {
-  var arr_word = post.text.split(' ');
-  console.log('breakFBPostOnTweets', arr_word.length, post);
-  post.arr_tweet = [];
-  post.prev_tweet_id = '';
-  var txt_tweet = '#новини #ДемСокира';
-  for (var i = 0, Ln = arr_word.length; i < Ln; ++i) {
-    var word = arr_word[i].replace(/\r?\n|\r/g, "").trim();
-    if (word.length === 0) {
-      continue;
-    }
-    var check_text = txt_tweet + ' ' + word;
-    if ((post.arr_tweet.length === 0) && current_fb_post.url) {
-      check_text += ' ' + current_fb_post.url;
-    }
-    var twt_res = twitter_check.parseTweet(check_text);
-    if (!twt_res.valid) {
-      if ((post.arr_tweet.length === 0) && current_fb_post.url) {
-        txt_tweet += ' ' + current_fb_post.url;
-      }
-      post.arr_tweet.push(txt_tweet);
-      txt_tweet = '@'+USER_TWITTER_LOGIN;
-    }
-    txt_tweet += ' ' + word;
-  }
-  if (txt_tweet.length > 0) {
-    if (post.arr_tweet.length === 0) {
-      txt_tweet += ' ' + current_fb_post.url;
-    }
-    post.arr_tweet.push(txt_tweet);
-  }
-  console.log('breakFBPostOnTweets', post.arr_tweet);
-}
-
 function postCurrentFbToTweet() {
   if (!current_fb_post || !current_fb_post.arr_tweet) {
     console.log('postCurrentFbToTweet', current_fb_post);
   }
   if (!current_fb_post.arr_tweet) {
-    breakFBPostOnTweets(current_fb_post);
+    utils.breakFBPostOnTweets(current_fb_post);
   }
   if (current_fb_post.arr_tweet.length === 0) {
     postFBtoTwitter();
@@ -483,8 +307,7 @@ function postFbToTweet() {
 }
 
 function postTweet(str, reply_to, img_ids) {
-  //return ;
-  var txt = str;//(reply_to != '' ? '@'+USER_TWITTER_LOGIN+' ' : '') + str;
+  var txt = str;
   var tweet_req = {status: txt, in_reply_to_status_id: reply_to === '' ? null : reply_to, media_ids: img_ids};
   console.log('postTweet', tweet_req);
   client.post('statuses/update', tweet_req,  function(error, tweet, response) {
@@ -527,13 +350,7 @@ function storeParams() {
 
 var arr_instragram_post = [];
 function scanInstagram() {
-  //bot_params.last_instr_post = '';
-/*if (!bot_params.last_instr_post) {
-  //bot_params.last_instr_post = 'BpW6-Jpgzr8';
-}*/
-
-  
-request({url: 'https://www.instagram.com/demsokyra.party/',
+  request({url: 'https://www.instagram.com/demsokyra.party/',
   //encoding: 'binary',
   headers: {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0'
@@ -542,6 +359,12 @@ request({url: 'https://www.instagram.com/demsokyra.party/',
   }, function (error, response, body) {
     if (error) {
       console.log('error:', error); // Print the error if one occurred
+
+      fs.writeFile(PATH_TO_LOG_FOLDER + 'inst_err1.txt', error, function(err) {
+        if(err) {
+            return console.log(err);
+        }
+      });
       return;
     }
     
@@ -673,5 +496,3 @@ function tweetFromInst(post_short_code, path_to_video, tweet_text, post_media_ty
 
     });
 }
-
-//postTweet('test tweet #');
