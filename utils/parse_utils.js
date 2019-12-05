@@ -150,39 +150,39 @@ function parsePostBody(body, fb_post_id) {
       return post;
   }
 
-  function breakFBPostOnTweets(post, user_twitter_login) {
-    var arr_word = post.text.split(' ');
-    console.log('breakFBPostOnTweets', arr_word.length, post);
-    post.arr_tweet = [];
-    post.prev_tweet_id = '';
-    var txt_tweet = '#новини #ДемСокира #D7 #Д7';
-    for (var i = 0, Ln = arr_word.length; i < Ln; ++i) {
-      var word = arr_word[i].replace(/\r?\n|\r/g, "").trim();
-      if (word.length === 0) {
-        continue;
-      }
-      var check_text = txt_tweet + ' ' + word;
-      if ((post.arr_tweet.length === 0) && current_fb_post.url) {
-        check_text += ' ' + current_fb_post.url;
-      }
-      var twt_res = twitter_check.parseTweet(check_text);
-      if (!twt_res.valid) {
-        if ((post.arr_tweet.length === 0) && current_fb_post.url) {
-          txt_tweet += ' ' + current_fb_post.url;
-        }
-        post.arr_tweet.push(txt_tweet);
-        txt_tweet = '@'+user_twitter_login;
-      }
-      txt_tweet += ' ' + word;
+function breakFBPostOnTweets(post, user_twitter_login) {
+  var arr_word = post.text.split(' ');
+  console.log('breakFBPostOnTweets', arr_word.length, post);
+  post.arr_tweet = [];
+  post.prev_tweet_id = '';
+  var txt_tweet = '#новини #ДемСокира #D7 #Д7';
+  for (var i = 0, Ln = arr_word.length; i < Ln; ++i) {
+    var word = arr_word[i].replace(/\r?\n|\r/g, "").trim();
+    if (word.length === 0) {
+      continue;
     }
-    if (txt_tweet.length > 0) {
-      if (post.arr_tweet.length === 0) {
+    var check_text = txt_tweet + ' ' + word;
+    if ((post.arr_tweet.length === 0) && current_fb_post.url) {
+      check_text += ' ' + current_fb_post.url;
+    }
+    var twt_res = twitter_check.parseTweet(check_text);
+    if (!twt_res.valid) {
+      if ((post.arr_tweet.length === 0) && current_fb_post.url) {
         txt_tweet += ' ' + current_fb_post.url;
       }
       post.arr_tweet.push(txt_tweet);
+      txt_tweet = '@'+user_twitter_login;
     }
-    console.log('breakFBPostOnTweets', post.arr_tweet);
+    txt_tweet += ' ' + word;
   }
+  if (txt_tweet.length > 0) {
+    if (post.arr_tweet.length === 0) {
+      txt_tweet += ' ' + current_fb_post.url;
+    }
+    post.arr_tweet.push(txt_tweet);
+  }
+  console.log('breakFBPostOnTweets', post.arr_tweet);
+}
 
 
 exports.cleanUrl = cleanUrl;

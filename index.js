@@ -486,11 +486,7 @@ function tweetFromInst(post_short_code, path_to_video, tweet_text, post_media_ty
                     }
                     copyPostFromInstToTwitter();
                 });*/
-
-
             });
-
         });
-
     });
 }

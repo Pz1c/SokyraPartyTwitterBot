@@ -21,6 +21,3 @@ youtube.playlistItems.list({
               console.log("Response", response);
             },
             function(err) { console.error("Execute error", err); });
-
-
-  //console.log('Status code: ' + res.status);
