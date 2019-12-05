@@ -1,2 +1,2 @@
 # SokyraPartyTwitterBot
-cope new from FB https://sokyra.party
+copy news from FB https://sokyra.party
