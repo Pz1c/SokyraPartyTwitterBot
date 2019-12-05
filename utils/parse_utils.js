@@ -155,7 +155,7 @@ function parsePostBody(body, fb_post_id) {
     console.log('breakFBPostOnTweets', arr_word.length, post);
     post.arr_tweet = [];
     post.prev_tweet_id = '';
-    var txt_tweet = '#новини #ДемСокира';
+    var txt_tweet = '#новини #ДемСокира #D7 #Д7';
     for (var i = 0, Ln = arr_word.length; i < Ln; ++i) {
       var word = arr_word[i].replace(/\r?\n|\r/g, "").trim();
       if (word.length === 0) {

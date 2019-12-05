@@ -387,7 +387,7 @@ function scanInstagram() {
       console.log(err.message, inst_json);
       return;
     }
-    var arr = injs.entry_data.ProfilePage[0].graphql.user.edge_owner_to_timeline_media.edges;
+    var arr = injs.entry_data.ProfilePage[0].graphql.user.edge_felix_video_timeline.edges;
     var new_last_instr_post; 
     for (var i = 0, Ln = arr.length; i < Ln; ++i) {
         var node = arr[i].node;

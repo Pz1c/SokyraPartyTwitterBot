@@ -8,6 +8,7 @@ var bot_access = JSON.parse(fs.readFileSync(PATH_TO_ACCESS_FILE, "utf8"));
 const youtube = google.youtube({
   version: 'v3',
   access_token: bot_access.youtube.access_token
+  
 });
 
 youtube.playlistItems.list({
